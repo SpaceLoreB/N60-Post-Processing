@@ -38,6 +38,7 @@ function quart = getQuartiles(T)
 end
 
 function avgs = makeAvgs(test00)
+% makes averages
     avgs = double.empty(0,5);
     avgs.Arithmetic = mean(test00.Diameter);
     avgs.Surface = sqrt(mean(test00.Diameter.^2));
