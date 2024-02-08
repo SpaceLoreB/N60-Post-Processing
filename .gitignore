@@ -1,2 +1,9 @@
 # List of untracked files to ignore
-.vsp
+.vsp*.vsp
+*.un~
+*.m~
+sampleData/2024_02_08-07_05_prove.mat
+sampleData/230526-145054-2-CVI01-7-sp1.txt
+sampleData/230605-124953-4-TXB8001-7-sp10.txt
+sampleData/231121-152512-2-1b-2b-4x-50.txt
+*.asv
