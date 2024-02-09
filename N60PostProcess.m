@@ -5,14 +5,16 @@
 % figures.
 % It will likely evolve into a live script to export processed data into LaTeX for publication.
 % We will make the most use of functions for code modularity and reusability.
-
+%
+% Lorenzo Becce, 09.2023
 % % This script automates the reading of text report files from all the
 % subfolders. It gives some basic error message when reading fails, but
 % make sure to have all the subfolders set correctly.
 % % TO DO!:
 %   * turn regexp parsing from scanReport into a function
-%   * save all variables after importing --> auto savename
 %   * streamline translation from bozze.m
+%   * adjust and enrich documentation
+%   * make it a bit more user-friendly
 
 %% IMPORT DATA
 clearvars
@@ -40,7 +42,7 @@ fprintf('\n%i files have been parsed in %4.2f s.\n',length(mfi),tElapsed);
 saveFileName = sprintf('%s_%s',string(datetime('now','Format','yyyy_MM_dd-hh_mm')),outFilename);
 save(saveFileName,names{1:end})
 
-% clear errMsg i tstart names
+clear errMsg i tstart saveFileName outFilename
 %% FUNCTIONS DECLARATION
 function [errMsg, varName] = scanReportExt(fname)
 % Script for importing data from the following text file:
