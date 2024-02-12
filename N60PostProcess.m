@@ -12,7 +12,6 @@
 % make sure to have all the subfolders set correctly.
 % % TO DO!:
 %   * turn regexp parsing from scanReport into a function
-%   * streamline translation from bozze.m
 %   * adjust and enrich documentation
 %   * make it a bit more user-friendly
 
@@ -39,10 +38,48 @@ fprintf('\n%i files have been parsed in %4.2f s.\n',length(mfi),tElapsed);
 
 % % Timestamping and saving
 % t = datetime('now','Format','yyyy_MM_dd-hh_mm');
-saveFileName = sprintf('%s_%s',string(datetime('now','Format','yyyy_MM_dd-hh_mm')),outFilename);
+saveFileName = sprintf('%s_%s_raw',string(datetime('now','Format','yyyy_MM_dd-hh_mm')),outFilename);
 save(saveFileName,names{1:end})
 
-clear errMsg i tstart saveFileName outFilename
+clear errMsg i tstart saveFileName %outFilename
+
+%% %% Processing all the datasets
+% if files are already loaded, process them
+for k = 1 : length(names)
+  F = names{k};
+  assignin('base',F,translateTab(evalin('base',F)));
+end
+
+% % If you need to load a previously saved file, uncomment the next lines and comment the previous 
+% names = load('sampleData/2024_02_08-07_05_prove.mat');
+% % get names
+% fn = fieldnames(names);
+% Fc = length(fn);
+% for k = 1 : Fc
+%   F = fn{k}
+%   % % https://it.mathworks.com/matlabcentral/answers/471356-how-to-post-process-each-variable-in-a-mat-file
+%   % S.(F) = renamevars(S.(F),1:width(S.(F)),newNames);
+%   names.(F) = translateTab(names.(F));
+% end
+
+% % Save the newly modified variables
+saveFileName = sprintf('%s_%s_processed',string(datetime('now','Format','yyyy_MM_dd-hh_mm')),outFilename);
+save(saveFileName,names{1:end})
+
+clear k Fc F
+
+%% FROM NOW ON...
+% ...Proceed as needed. You can plot using one of the custom plotting functions. Each
+% can be fed any number of arguments. 
+% * newHistrogram() plots number- and volume-based histograms with
+% cumulative curves on two figures. Arguments are plotted on top of each
+% other.
+% * plotCSD() plots the cumulative curves (number- or volume-based) , without the bins
+% * otherHistogram() plots cumulative and histograms of each argument,
+% separately
+% * stackedHistogram() plots up to three separate arguments in pretty much
+% the same way as newHistogram(). Will likely get removed at some point.
+
 %% FUNCTIONS DECLARATION
 function [errMsg, varName] = scanReportExt(fname)
 % Script for importing data from the following text file:
