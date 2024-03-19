@@ -11,6 +11,8 @@
 % subfolders. It gives some basic error message when reading fails, but
 % make sure to have all the subfolders set correctly.
 % % TO DO!:
+%   * implement all changes in the main file (i.e. avoid having to open and
+%   modify several files for every analysis)
 %   * turn regexp parsing from scanReport into a function
 %   * adjust and enrich documentation
 %   * make it a bit more user-friendly
@@ -20,9 +22,9 @@ clearvars
 clc
 
 % % A .mat file will be saved after importing. Enter a name for the file.
-outFilename = 'prove';
+outFilename = 'comparativeTXB8001';
 % % Enter here the path of the (sub)folder where you stored the txt files.
-mfi = dir('C:\Users\LBecce\Desktop\N60 ripresi sett23\commitFeb24\N60pp\sampleData/*.txt');      %  get all txt files in subdirectories
+mfi = dir('C:\Users\LBecce\Desktop\N60 ripresi sett23\processing\OneDrive_1_15-3-2024/*.txt');      %  get all txt files in subdirectories
 mfi = {mfi.name};           % save only names
 
 % % Importing the data.
@@ -45,26 +47,26 @@ clear errMsg i tstart saveFileName %outFilename
 
 %% %% Processing all the datasets
 % if files are already loaded, process them
-for k = 1 : length(names)
-  F = names{k};
-  assignin('base',F,translateTab(evalin('base',F)));
-end
-
-% % If you need to load a previously saved file, uncomment the next lines and comment the previous 
-% names = load('sampleData/2024_02_08-07_05_prove.mat');
-% % get names
-% fn = fieldnames(names);
-% Fc = length(fn);
-% for k = 1 : Fc
-%   F = fn{k}
-%   % % https://it.mathworks.com/matlabcentral/answers/471356-how-to-post-process-each-variable-in-a-mat-file
-%   % S.(F) = renamevars(S.(F),1:width(S.(F)),newNames);
-%   names.(F) = translateTab(names.(F));
+% for k = 1 : length(names)
+%   F = names{k};
+%   assignin('base',F,translateTab(evalin('base',F)));
 % end
+
+% If you need to load a previously saved file, uncomment the next lines and comment the previous 
+% names = load('sampleData/2024_02_08-07_05_prove.mat');
+% get names
+fn = fieldnames(names);
+Fc = length(fn);
+for k = 1 : Fc
+  F = fn{k}
+  % % https://it.mathworks.com/matlabcentral/answers/471356-how-to-post-process-each-variable-in-a-mat-file
+  % S.(F) = renamevars(S.(F),1:width(S.(F)),newNames);
+  names.(F) = translateTab(names.(F));
+end
 
 % % Save the newly modified variables
 saveFileName = sprintf('%s_%s_processed',string(datetime('now','Format','yyyy_MM_dd-hh_mm')),outFilename);
-save(saveFileName,names{1:end})
+save(saveFileName,"names")%{1:end})
 
 clear k Fc F
 
@@ -91,17 +93,19 @@ errMsg = "ok";
 % % Parsing report for variables to make var name
 raw = fileread(fname);
 % Reads pressures from report
-nzID = regexp(raw, '(?<="Nozzle ID"\s*)[^\n\r]*', 'match', 'once');
-nzSp = regexp(raw, '(?<="Nozzle specimen"\s*)[^\n\r]*', 'match', 'once');
+zDist = regexp(raw, '(?<="zDist"\s*)[^\n\r]*', 'match', 'once');
+mag = regexp(raw, '(?<="mag"\s*)[^\n\r]*', 'match', 'once');
+spec = regexp(raw, '(?<="specimen"\s*)[^\n\r]*', 'match', 'once');
 % Checking fro robustness
-if (isempty(nzID) || isempty(nzSp))
+if (isempty(zDist) || isempty(mag) || isempty(spec))
     errMsg = 'Empty header';
     return
 end
-nzID = regexp(nzID,'\w*','match');
-nzSp = regexp(nzSp,'\w*','match');
+zDist = regexp(zDist,'\w*','match');
+mag = regexp(mag,'\w*','match');
+spec = regexp(spec,'\w*','match');
 % make varName
-varName = sprintf('%s_%s',nzID{1},nzSp{1});
+varName = sprintf('cmp%scm_%s_%s',zDist{1},mag{1},spec{1});
 
 % % Actual file import
 % % Set up the Import Options and import the data
@@ -112,6 +116,10 @@ opts = delimitedTextImportOptions("NumVariables", 9);
 % parameters)
 A = regexp(raw,'\n','split');
 lineStart = find(contains(A,'DIAMETER'))+1;
+if isempty(lineStart)
+    errMsg = 'Empty file';
+    return
+end
 
 opts.DataLines = [lineStart, Inf];
 opts.Delimiter = ",";
