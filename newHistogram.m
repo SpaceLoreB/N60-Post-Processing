@@ -10,9 +10,10 @@ colours = .66.*[
     rand(nargin-3,3)];    % Further colours are randomised
 
 nOpen = length(findobj('type','figure'));
+xT = [50,100,200,500,1000]; % Ticks for x axis
 
-% figure(nOpen+1)
-subplot(1,2,1)
+figure(nOpen+1)
+% subplot(1,2,1)
 yyaxis left
 for j = 1:nargin
     histogram('BinEdges',varargin{j}.binEdges,'BinCounts',varargin{j}.percCount,'FaceColor',colours(j,:))
@@ -20,10 +21,11 @@ for j = 1:nargin
 end
     ylabel('Drop Size Distribution - % counted')%,'FontSize',fs)
     set(gca,'XScale',"log")
+    set(gca,'XTick',xT)
 
 yyaxis right
 for j = 1:nargin
-    plot(varargin{j}.binCentres, varargin{j}.cumCount,'-','LineWidth',1,'Color',colours(j,:))
+    plot(varargin{j}.binCentres, varargin{j}.cumCount,'-','LineWidth',2,'Color',colours(j,:))
     hold on
 end
     ylabel('Number Cumulative Distribution [%]')%,'FontSize',fs)
@@ -31,19 +33,20 @@ end
 xlabel('Droplet Diameter [\mum]')%,'FontSize',fs)
 title('Numeric DSD');
 
-% figure(nOpen+2)
-subplot(1,2,2)
+figure(nOpen+2)
+% subplot(1,2,2)
 yyaxis left
 for j = 1:nargin
-    histogram('BinEdges',varargin{j}.binEdges,'BinCounts',varargin{j}.percVol,'FaceColor',colours(j,:))
+    histogram('BinEdges',varargin{j}.binEdges,'BinCounts',varargin{j}.percVol,'FaceColor',colours(j,:),'FaceAlpha',0.5)
     hold on
 end
     ylabel('Drop Size Distribution - % volume')%,'FontSize',fs)
     set(gca,'XScale',"log")
+    set(gca,'XTick',xT)
 
 yyaxis right
 for j = 1:nargin
-    plot(varargin{j}.binCentres, varargin{j}.cumVol,'-','LineWidth',1,'Color',colours(j,:))
+    plot(varargin{j}.binCentres, varargin{j}.cumVol,'-','LineWidth',2,'Color',colours(j,:))
     hold on
 end
     ylabel('Volume Cumulative Distribution [%]')%,'FontSize',fs)

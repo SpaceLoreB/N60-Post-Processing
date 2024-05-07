@@ -7,7 +7,8 @@ colours = .66.*[
     0.1020    0.5490    0.3922; % green, ex NaTec
     rand(nargin-3,3)];    % Further colours are randomised
 
-% figure(1)
+nOpen = length(findobj('type','figure'));
+% figure(nOpen+1)
 % for j = 1:nargin
 %     plot(varargin{j}.binCentres, varargin{j}.cumCount,'-','LineWidth',2,'Color',colours(j,:))
 %     hold on
@@ -17,7 +18,7 @@ colours = .66.*[
 % xlabel('Droplet Diameter [\mum]')%,'FontSize',fs)
 % title('Numeric DSD');
 % % 
-figure(2)
+figure(nOpen+1)
 for j = 1:nargin
     plot(varargin{j}.binCentres, varargin{j}.cumVol,'-','LineWidth',2,'Color',colours(j,:))
     hold on
