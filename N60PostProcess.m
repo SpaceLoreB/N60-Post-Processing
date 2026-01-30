@@ -24,7 +24,8 @@ clc
 % % A .mat file will be saved after importing. Enter a name for the file.
 outFilename = 'comparativeTXB8001';
 % % Enter here the path of the (sub)folder where you stored the txt files.
-mfi = dir('C:\Users\LBecce\Desktop\N60 ripresi sett23\processing\OneDrive_1_15-3-2024/*.txt');      %  get all txt files in subdirectories
+dpath = uigetdir;
+mfi = dir([dpath '\*.txt']);      %  get all txt files in subdirectories
 mfi = {mfi.name};           % save only names
 
 % % Importing the data.
@@ -32,7 +33,9 @@ tstart = tic;
 % errCount = 0;
 names = cell(length(mfi),1);
 for i = 1:length(mfi)
-    [errMsg, names{i}] = scanReportExt(mfi{i});
+    disp(mfi{i})
+    varName = input('Enter variable name: ','s');
+    [errMsg] = scanReportExt([dpath '\' mfi{i}],varName);
     fprintf('%s for file %s\n',errMsg,mfi{i});
 end
 tElapsed = toc(tstart);
