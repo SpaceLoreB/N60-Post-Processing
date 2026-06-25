@@ -1,77 +1,92 @@
 %% MAIN N60 POST-PROCESSING SCRIPT
-% Lorenzo Becce, 04.02.2022
-% This is the main file where we (io e chi?) will gather and compare result
-% files for different nozzles. We will chiefly fit distributions and create
-% figures.
-% It will likely evolve into a live script to export processed data into LaTeX for publication.
-% We will make the most use of functions for code modularity and reusability.
+% Lorenzo Becce (gh:SpaceLoreB), 25.06.2026
+% This script allows to gather and compare results from the VisiSize N60
+% Particle/Droplet Image Analysis (PDIA) system made by Oxford Lasers Ltd. (Didcot, Oxfordshire, UK).
+% The main idea is to create appopriate figures and possibly fit
+% distributions, so nothing fancy. Further extensions are left to the user
+% as exercise (I quit my job so it's up to you LOL).
+% The script will make large use of functions for code modularity and
+% reusability, despite the clear impact that this will have on user's
+% mental health. But hey: if it works, it works.
 %
-% Lorenzo Becce, 09.2023
-% % This script automates the reading of text report files from all the
-% subfolders. It gives some basic error message when reading fails, but
+% This script automates the reading of text report files from a
+% user-specified subfolder. It gives some basic error messages when reading fails, but
 % make sure to have all the subfolders set correctly.
-% % TO DO!:
+%
+% DISCLAIMER: I wrote most of this stuff years ago so I might not even
+% remember myself what in the sweet love of God goes on in the code.
+%
+% % TO DO!:         
 %   * implement all changes in the main file (i.e. avoid having to open and
 %   modify several files for every analysis)
-%   * turn regexp parsing from scanReport into a function
-%   * adjust and enrich documentation
-%   * make it a bit more user-friendly
-
+%   * turn regexp parsing from scanReport into a function (more flexible)
+%   * eat all the crayons and explain which colour was your favourite
+%   * take care of each other
+%   * star this project on GH so I get all the glory (optional)
+%
 %% IMPORT DATA
 clearvars
 clc
 
 % % A .mat file will be saved after importing. Enter a name for the file.
-outFilename = 'comparativeTXB8001';
+outFilename = input('Enter a name for the current dataset: ','s');
 % % Enter here the path of the (sub)folder where you stored the txt files.
 dpath = uigetdir;
-mfi = dir([dpath '\*.txt']);      %  get all txt files in subdirectories
-mfi = {mfi.name};           % save only names
+mfi = dir([dpath '\*.txt']);        %  get all txt files in subdirectories
+mfi = {mfi.name};                   % save only names
 
-% % Importing the data.
-tstart = tic;
-% errCount = 0;
+% Now importing the data.
+% errCount = 0;        % Old thing I used to count how often I used to fail
 names = cell(length(mfi),1);
 for i = 1:length(mfi)
     disp(mfi{i})
-    varName = input('Enter variable name: ','s');
-    [errMsg] = scanReportExt([dpath '\' mfi{i}],varName);
-    fprintf('%s for file %s\n',errMsg,mfi{i});
+    names{i} = input('Enter variable name: ','s');
+    [errMsg] = scanReport([dpath '\' mfi{i}],names{i});
+    fprintf('File %s: %s\n',mfi{i},errMsg);
 end
-tElapsed = toc(tstart);
-fprintf('\n%i files have been parsed in %4.2f s.\n',length(mfi),tElapsed);
+fprintf('\n%i files have been parsed.\n',length(mfi));
 
-% % Timestamping and saving
-% t = datetime('now','Format','yyyy_MM_dd-hh_mm');
+% % Timestamping and saving the raw data
 saveFileName = sprintf('%s_%s_raw',string(datetime('now','Format','yyyy_MM_dd-hh_mm')),outFilename);
-save(saveFileName,names{1:end})
+save(saveFileName,names{1:end})         % Possibly move them to the original folder
 
-clear errMsg i tstart saveFileName %outFilename
+clear errMsg i saveFileName %outFilename
 
-%% %% Processing all the datasets
+%% Process the datasets
+% [SpaceLoreB, 06.2026]: I have separated this phase from the import,
+% although they could have been performed sequentially. This allows for
+% more flexibility in case you want to re-do, extend or correct the
+% processing, or even re-process previously imported and saved data.
+% If you have just finished importing, proceed as-is. Otherwise, just
+% comment the following "for" cycle and uncomment as instructed below.
+
 % if files are already loaded, process them
-% for k = 1 : length(names)
-%   F = names{k};
-%   assignin('base',F,translateTab(evalin('base',F)));
-% end
+for k = 1 : length(names)
+  F = names{k};
+    % % Why tho
+  assignin('base',F,processRaw(evalin('base',F)));
+end
+clear k F
 
-% If you need to load a previously saved file, uncomment the next lines and comment the previous 
+% If you need to load a previously saved file, uncomment the next line and comment the previous 
+% Might as well select a file through a user interface:
+
 % names = load('sampleData/2024_02_08-07_05_prove.mat');
 % get names
-fn = fieldnames(names);
-Fc = length(fn);
-for k = 1 : Fc
-  F = fn{k}
-  % % https://it.mathworks.com/matlabcentral/answers/471356-how-to-post-process-each-variable-in-a-mat-file
-  % S.(F) = renamevars(S.(F),1:width(S.(F)),newNames);
-  names.(F) = translateTab(names.(F));
-end
+% fn = fieldnames(names);
+% Fc = length(fn);
+% for k = 1 : Fc
+%   F = fn{k}
+%   % % Seriously testing my patience here
+%   % % https://it.mathworks.com/matlabcentral/answers/471356-how-to-post-process-each-variable-in-a-mat-file
+%   % S.(F) = renamevars(S.(F),1:width(S.(F)),newNames);
+%   names.(F) = processRaw(names.(F));
+% end
+% clear k Fc F
 
-% % Save the newly modified variables
+% % In any case, save the newly modified variables
 saveFileName = sprintf('%s_%s_processed',string(datetime('now','Format','yyyy_MM_dd-hh_mm')),outFilename);
-save(saveFileName,"names")%{1:end})
-
-clear k Fc F
+save(saveFileName,"names")
 
 %% FROM NOW ON...
 % ...Proceed as needed. You can plot using one of the custom plotting functions. Each
@@ -79,44 +94,58 @@ clear k Fc F
 % * newHistrogram() plots number- and volume-based histograms with
 % cumulative curves on two figures. Arguments are plotted on top of each
 % other.
-% * plotCSD() plots the cumulative curves (number- or volume-based) , without the bins
+% * plotCSD() plots the cumulative curves (number- or volume-based) ,
+% without the histograms
 % * otherHistogram() plots cumulative and histograms of each argument,
 % separately
 % * stackedHistogram() plots up to three separate arguments in pretty much
 % the same way as newHistogram(). Will likely get removed at some point.
 
 %% FUNCTIONS DECLARATION
-function [errMsg, varName] = scanReportExt(fname)
+function [errMsg] = scanReport(fname,varName)
 % Script for importing data from the following text file:
 % Auto-generated by MATLAB on 06-Sep-2023
-% Converted and extended by L.B. on 18-dec-2023 and many other times
+% Converted and extended by L.B. on 18-Dec-2023 and many other times until
+% I decided MATLAB was simply not worth my sanity.
 
-errMsg = "ok";
+errMsg = "ok";                  % Default outcome
+raw = fileread(fname);          % Opening the file
 
-% % Parsing report for variables to make var name
-raw = fileread(fname);
-% Reads pressures from report
-zDist = regexp(raw, '(?<="zDist"\s*)[^\n\r]*', 'match', 'once');
-mag = regexp(raw, '(?<="mag"\s*)[^\n\r]*', 'match', 'once');
-spec = regexp(raw, '(?<="specimen"\s*)[^\n\r]*', 'match', 'once');
-% Checking fro robustness
-if (isempty(zDist) || isempty(mag) || isempty(spec))
-    errMsg = 'Empty header';
-    return
-end
-zDist = regexp(zDist,'\w*','match');
-mag = regexp(mag,'\w*','match');
-spec = regexp(spec,'\w*','match');
-% make varName
-varName = sprintf('cmp%scm_%s_%s',zDist{1},mag{1},spec{1});
+% % NOTE: the following part is theoretically very useful, but the variables
+% change at every experiment. For this reason, I commented it out.
+% SHOULD YOU EVER NEED IT, I suggest you try turning it into an external function
+% and calling it from this function everytime you need it. Use regexp
+% (regular expression) parsing, as in:
+%
+%    PARAMETER = regexp(raw, '(?<="PARAMETER"\s*)[^\n\r]*', 'match', 'once');
+%
+% The idea is to parse the user-defined test parameters (nozzle type, pressure, position, ...) to generate a name
+% for the MATLAB variable, so you don't have to insert it manually.
+
+% % (Old system) Parsing report for variables to make var name
+% zDist = regexp(raw, '(?<="zDist"\s*)[^\n\r]*', 'match', 'once');
+% mag = regexp(raw, '(?<="mag"\s*)[^\n\r]*', 'match', 'once');
+% spec = regexp(raw, '(?<="specimen"\s*)[^\n\r]*', 'match', 'once');
+
+% % Checking for errors
+% if (isempty(zDist) || isempty(mag) || isempty(spec))
+%     errMsg = 'Empty header';      % or whatever error msg can be representative
+%     return
+% end
+
+% % We now need to turn the parsed regexp into a string (thank you, MATLAB,
+% % for being more psychopathic than me)
+% zDist = regexp(zDist,'\w*','match');
+% mag = regexp(mag,'\w*','match');
+% spec = regexp(spec,'\w*','match');
+
+% % And finally make varName:
+% varName = sprintf('cmp%scm_%s_%s',zDist{1},mag{1},spec{1});
 
 % % Actual file import
 % % Set up the Import Options and import the data
-opts = delimitedTextImportOptions("NumVariables", 9);
-% Specify range and delimiter
-
-% % Find the start of the results table (changes depending on user-defined
-% parameters)
+opts = delimitedTextImportOptions("NumVariables", 9);       % Specify range and delimiter
+% % Find the start of the results table (changes depending on user-defined parameters)
 A = regexp(raw,'\n','split');
 lineStart = find(contains(A,'DIAMETER'))+1;
 if isempty(lineStart)
@@ -135,8 +164,6 @@ opts.EmptyLineRule = "read";
 opts.ConsecutiveDelimitersRule = "join";
 
 % Specify variable properties
-% opts = setvaropts(opts, ["NUMBER", "AREA", "VOLUME", "CUMVOL", "AVSPDms"], "TrimNonNumeric", true);
-% opts = setvaropts(opts, ["bin1", "bin2", "RAWCOUNT", "PROBEVOLUME", "NUMBER", "AREA", "VOLUME", "CUMVOL"], "TrimNonNumeric", true);
 opts = setvaropts(opts, ["bin1", "bin2", "RAWCOUNT", "PROBEVOLUME", "NUMBER", "AREA", "VOLUME", "CUMVOL"], "ThousandsSeparator", ",");
 
 % Import the data
